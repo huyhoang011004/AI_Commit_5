@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kruskal MST Visualization</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h2>Đề 5: Bài toán hệ thống dây diện</h2>
+    <p></p>Một công ty cần thay toàn bộ hệ thống dây điện cho N phòng làm việc. Cho biết sơ đồ mạng lưới điện hiện có
+    của n căn phòng được biểu diễn bằng ma trận A[i,j] trong đó A[i,j] chính là độ dài của dây điện nối giữa 2 phòng i
+    và j
+    (A[i,j]=A[j,i], A[i,j]=0 nếu không có (không thể) dây nối giữa phòng i và j). Hãy lập trình tính độ dài của dây dẫn
+    cần sử dụng sao cho cả N phòng dều có điện và số lượng này là ít nhất.
+    Kết quả xuất ra màn hình cách nối và tổng độ dài nhỏ nhất. </p>
+
+    <p>
+        <label for="numRooms">Số phòng (N): </label>
+        <input type="number" id="numRooms" value="4">
+        <button onclick="generateMatrix()">Tạo Ma Trận</button>
+    </p>
+
+    <p id="matrixTitle">Nhập ma trận trọng số:</p>
+    <table id="matrix">
+        <!-- Bảng ma trận sẽ được tạo bằng JavaScript -->
+    </table>
+    
+    <button onclick="kruskalMST()">Chạy Thuật Toán Kruskal</button>
+    <button onclick="primMST()">Chạy Thuật Toán Prim</button>
+
+    <h3 id="sortedEdgesTitle">Các cạnh được sắp xếp theo trọng số tăng dần:</h3>
+    <table id="sortedEdges">
+        <thead>
+            <tr>
+                <th>Đỉnh 1</th>
+                <th>Đỉnh 2</th>
+                <th>Trọng số</th>
+                <th>Chu trình</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <h3 id="primEdgesTitle" style="display:none;">Các cạnh trong cây khung nhỏ nhất (Prim):</h3>
+    <table id="primEdges" style="display:none;">
+        <thead>
+            <tr>
+                <th>Đỉnh 1</th>
+                <th>Đỉnh 2</th>
+                <th>Trọng số</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div class="steps hidden">
+        <h3>Các bước thực hiện:</h3>
+        <div id="steps"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

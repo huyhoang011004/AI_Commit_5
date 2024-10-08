@@ -22,7 +22,7 @@ function generateMatrix() {
                 const input = document.createElement('input');
                 input.type = 'number';
                 input.min = '0';
-                const randomValue = Math.floor(Math.random() * 20);
+                const randomValue = Math.floor(Math.random() * 100);
                 input.value = randomValue; // Gán giá trị ngẫu nhiên
                 values[i][j] = randomValue; // Lưu giá trị vào mảng
                 cell.appendChild(input);

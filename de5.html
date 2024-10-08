@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kruskal MST Visualization</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+        }
+
+        h2 {
+            color: #2b6cb0;
+        }
+
+        table {
+            width: 100%;
+            margin-bottom: 20px;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 5px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f0f0f0;
+            font-weight: bold;
+        }
+
+        td input {
+            width: 50px;
+            padding: 3px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+
+        button {
+            background-color: #2b6cb0;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #1a4d85;
+        }
+
+        .steps {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
+            margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .step-detail {
+            background-color: #e9f5ff;
+            padding: 10px;
+            border-left: 4px solid #2b6cb0;
+            margin-bottom: 10px;
+        }
+
+        .step-detail p {
+            margin: 0;
+            color: #2b6cb0;
+        }
+
+        .final-result {
+            background-color: #e6ffed;
+            padding: 10px;
+            border-left: 4px solid #48bb78;
+            color: #48bb78;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #sortedEdges,
+        #sortedEdgesTitle {
+            display: none;
+        }
+
+        #primEdges,
+        #primEdgesTitle {
+            display: none;
+        }
+
+        #matrixTitle {
+            display: none;
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            td input {
+                width: 40px;
+                padding: 2px;
+                font-size: 12px;
+            }
+
+            button {
+                font-size: 12px;
+                padding: 8px 12px;
+                margin-bottom: 10px;
+            }
+
+            h2 {
+                font-size: 18px;
+            }
+
+            .steps {
+                padding: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            td input {
+                width: 30px;
+            }
+
+            button {
+                font-size: 12px;
+                width: 100%;
+                margin-bottom: 5px;
+            }
+
+            h2 {
+                font-size: 16px;
+            }
+
+            .steps {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Đề 5: Bài toán hệ thống dây diện</h2>
+    <p>Một công ty cần thay toàn bộ hệ thống dây điện cho N phòng làm việc. Cho biết sơ đồ mạng lưới điện hiện có
+        của n căn phòng được biểu diễn bằng ma trận A[i,j] trong đó A[i,j] chính là độ dài của dây điện nối giữa 2 phòng
+        i và j
+        (A[i,j]=A[j,i], A[i,j]=0 nếu không có (không thể) dây nối giữa phòng i và j). Hãy lập trình tính độ dài của dây
+        dẫn
+        cần sử dụng sao cho cả N phòng dều có điện và số lượng này là ít nhất. Kết quả xuất ra màn hình cách nối và tổng
+        độ dài nhỏ nhất.</p>
+    <p style="display: flex; gap: 10px;">
+        <label for="numRooms" style="margin: 0;">Số phòng (N): </label>
+        <input type="number" id="numRooms" value="5" style="width: 60px;">
+    </p>
+
+    <p style="display: flex; flex-wrap: wrap; gap: 10px;">       
+        <button onclick="generateMatrix()">Tạo Ma Trận</button>
+    </p>
+
+    <p id="matrixTitle">Nhập ma trận trọng số:</p>
+    <table id="matrix">
+        <!-- Bảng ma trận sẽ được tạo bằng JavaScript -->
+    </table>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <button onclick="kruskalMST()">Chạy Thuật Toán Kruskal</button>
+        <button onclick="primMST()">Chạy Thuật Toán Prim</button>
+    </div>
+
+    <h3 id="sortedEdgesTitle">Các cạnh được sắp xếp theo trọng số tăng dần:</h3>
+    <table id="sortedEdges">
+        <thead>
+            <tr>
+                <th>Đỉnh 1</th>
+                <th>Đỉnh 2</th>
+                <th>Trọng số</th>
+                <th>Chu trình</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h3 id="primEdgesTitle">Các cạnh trong cây khung nhỏ nhất (Prim):</h3>
+    <table id="primEdges">
+        <thead>
+            <tr>
+                <th>Đỉnh 1</th>
+                <th>Đỉnh 2</th>
+                <th>Trọng số</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div class="steps hidden">
+        <h3>Các bước thực hiện:</h3>
+        <div id="steps"></div>
+    </div>
+
+    <script>// Hàm tạo bảng ma trận dựa trên số phòng
+        function generateMatrix() {
+            document.getElementById('matrixTitle').style.display = 'block';
+            const numRooms = parseInt(document.getElementById('numRooms').value);
+            const table = document.getElementById('matrix');
+            table.innerHTML = ''; // Xóa bảng cũ
+
+            // Khởi tạo mảng values để lưu trữ giá trị
+            const values = Array.from({ length: numRooms + 1 }, () => Array(numRooms + 1).fill(0));
+
+            for (let i = 0; i <= numRooms; i++) {
+                const row = document.createElement('tr');
+                for (let j = 0; j <= numRooms; j++) {
+                    const cell = document.createElement(i == 0 || j == 0 ? 'th' : 'td');
+                    if (i == 0 && j == 0) {
+                        cell.innerText = 'Khoảng cách';
+                    } else if (i == 0 && j > 0) {
+                        cell.innerText = 'P' + j; // Đặt tiêu đề cột
+                    } else if (j == 0 && i > 0) {
+                        cell.innerText = 'P' + i; // Đặt tiêu đề hàng
+                    } else if (i > 0 && j > 0 && i < j) {
+                        const input = document.createElement('input');
+                        input.type = 'number';
+                        input.min = '0';
+                        const randomValue = Math.floor(Math.random() * 100);
+                        input.value = randomValue; // Gán giá trị ngẫu nhiên
+                        values[i][j] = randomValue; // Lưu giá trị vào mảng
+                        cell.appendChild(input);
+                    } else if (i > 0 && j > 0 && i > j) {
+                        const input = document.createElement('input');
+                        input.type = 'number';
+                        input.min = '0';
+                        input.value = values[j][i]; // Gán giá trị Aji từ mảng
+                        cell.appendChild(input);
+                    } else {
+                        const input = document.createElement('input');
+                        input.value = '0'; // Gán 0 cho ô (i, i)
+                        cell.appendChild(input);
+                    }
+                    row.appendChild(cell);
+                }
+                table.appendChild(row);
+            }
+        }
+        // Hàm tìm cây khung nhỏ nhất bằng Kruskal
+        //cach 1
+        function kruskalMST() {
+            const numRooms = parseInt(document.getElementById('numRooms').value);
+            const edges = [];
+            const graph = Array(numRooms).fill(null).map(() => []); // Khởi tạo đồ thị
+            const result = [];
+            let totalLength = 0;
+
+            // Lấy ma trận từ bảng HTML
+            const matrix = [];
+            for (let i = 1; i <= numRooms; i++) {
+                matrix[i - 1] = [];
+                for (let j = 1; j <= numRooms; j++) {
+                    const value = parseInt(document.querySelector(`#matrix tr:nth-child(${i + 1}) td:nth-child(${j + 1}) input`).value);
+                    matrix[i - 1][j - 1] = value;
+                    if (i < j && value > 0) {
+                        edges.push([value, i - 1, j - 1]); // Lưu cạnh dưới dạng [trọng số, đỉnh 1, đỉnh 2]
+                    }
+                }
+            }
+
+            // Sắp xếp các cạnh theo trọng số
+            edges.sort((a, b) => a[0] - b[0]);
+
+            // Hiển thị bảng sắp xếp các cạnh
+            const sortedEdgesTable = document.querySelector("#sortedEdges tbody");
+            sortedEdgesTable.innerHTML = ''; // Xóa bảng cũ
+            document.getElementById('sortedEdges').style.display = 'table';
+            document.getElementById('sortedEdgesTitle').style.display = 'block';
+            document.getElementById('primEdges').style.display = 'none';
+            document.getElementById('primEdgesTitle').style.display = 'none';
+
+            // Hàm DFS kiểm tra chu trình
+            function hasCycle(u, parent, visited) {
+                visited[u] = true;
+                for (let neighbor of graph[u]) {
+                    if (!visited[neighbor]) {
+                        if (hasCycle(neighbor, u, visited)) {
+                            return true;
+                        }
+                    } else if (neighbor !== parent) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // Bắt đầu thuật toán Kruskal
+            const stepsDiv = document.getElementById('steps');
+            stepsDiv.innerHTML = ''; // Xóa các bước cũ
+            document.querySelector('.steps').classList.remove('hidden');
+
+            let edgesAdded = 0; // Biến đếm số cạnh đã thêm vào MST
+
+            edges.forEach(([weight, u, v]) => {
+                const visited = Array(numRooms).fill(false);
+                graph[u].push(v);
+                graph[v].push(u);
+
+                const cycleFormed = hasCycle(u, -1, visited); // Kiểm tra chu trình bằng DFS
+
+                // Nếu có chu trình thì loại bỏ cạnh này khỏi đồ thị
+                if (cycleFormed) {
+                    graph[u].pop();
+                    graph[v].pop();
+                }
+
+                // Cập nhật bảng sortedEdges
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>P${u + 1}</td><td>P${v + 1}</td><td>${weight}</td><td>${cycleFormed ? 'Có' : 'Không'}</td>`;
+                sortedEdgesTable.appendChild(row);
+
+                if (!cycleFormed) {
+                    result.push([u + 1, v + 1, weight]);
+                    totalLength += weight;
+                    edgesAdded++; // Tăng số lượng cạnh đã thêm
+
+                    // In bước thực hiện
+                    const step = document.createElement('p');
+                    step.innerText = `Thêm dây giữa phòng P${u + 1} và P${v + 1} với độ dài ${weight}. Tổng độ dài dây điện là: ${totalLength}`;
+                    stepsDiv.appendChild(step);
+                } else if (edgesAdded < numRooms - 1) {
+                    // In bước bỏ qua cạnh chỉ khi chưa đạt đủ số cạnh
+                    const step = document.createElement('p');
+                    step.innerText = `Bỏ qua dây giữa phòng P${u + 1} và P${v + 1} vì nó tạo thành chu trình.`;
+                    stepsDiv.appendChild(step);
+                }
+            });
+
+            // In kết quả cuối cùng
+            const finalStep = document.createElement('p');
+            finalStep.innerText = `Cây khung nhỏ nhất có tổng độ dài dây điện là: ${totalLength}`;
+            stepsDiv.appendChild(finalStep);
+        }
+
+        // cach 2
+        // function kruskalMST() {
+        //     const numRooms = parseInt(document.getElementById('numRooms').value);
+        //     const edges = [];
+        //     const parent = Array(numRooms).fill(0).map((_, i) => i);
+        //     const result = [];
+        //     let totalLength = 0;
+
+        //     // Lấy ma trận từ bảng HTML
+        //     const matrix = [];
+        //     for (let i = 1; i <= numRooms; i++) {
+        //         matrix[i - 1] = [];
+        //         for (let j = 1; j <= numRooms; j++) {
+        //             const value = parseInt(document.querySelector(`#matrix tr:nth-child(${i + 1}) td:nth-child(${j + 1}) input`).value);
+        //             matrix[i - 1][j - 1] = value;
+        //             if (i < j && value > 0) {
+        //                 edges.push([value, i - 1, j - 1]); // Lưu cạnh dưới dạng [trọng số, đỉnh 1, đỉnh 2]
+        //             }
+        //         }
+        //     }
+
+        //     // Sắp xếp các cạnh theo trọng số
+        //     edges.sort((a, b) => a[0] - b[0]);
+
+        //     // Hiển thị bảng và tiêu đề khi nhấn nút
+        //     document.getElementById('sortedEdges').style.display = 'table';
+        //     document.getElementById('sortedEdgesTitle').style.display = 'block';
+
+        //     // Ẩn bảng Prim
+        //     document.getElementById('primEdges').style.display = 'none';
+        //     document.getElementById('primEdgesTitle').style.display = 'none';
+
+        //     // Hiển thị bảng sắp xếp các cạnh
+        //     const sortedEdgesTable = document.querySelector("#sortedEdges tbody");
+        //     sortedEdgesTable.innerHTML = ''; // Xóa bảng cũ
+
+        //     // Hàm tìm tập hợp của một đỉnh
+        //     function find(u) {
+        //         if (parent[u] === u) return u;
+        //         return parent[u] = find(parent[u]);
+        //     }
+
+        //     // Hàm liên kết hai định
+        //     function union(u, v) {
+        //         const rootU = find(u);
+        //         const rootV = find(v);
+        //         if (rootU !== rootV) {
+        //             parent[rootV] = rootU;
+        //             return true;
+        //         }
+        //         return false;
+        //     }
+
+        //     // Bắt đầu thuật toán Kruskal
+        //     const stepsDiv = document.getElementById('steps');
+        //     stepsDiv.innerHTML = ''; // Xóa các bước cũ
+        //     document.querySelector('.steps').classList.remove('hidden');
+
+        //     let edgesAdded = 0; // Biến đếm số cạnh đã thêm vào MST
+
+        //     edges.forEach(([weight, u, v]) => {
+        //         const cycleFormed = !union(u, v); // Kiểm tra chu trình
+
+        //         // Cập nhật bảng sortedEdges
+        //         const row = document.createElement('tr');
+        //         row.innerHTML = `<td>P${u + 1}</td><td>P${v + 1}</td><td>${weight}</td><td>${cycleFormed ? 'Có' : 'Không'}</td>`;
+        //         sortedEdgesTable.appendChild(row);
+
+        //         if (!cycleFormed) {
+        //             result.push([u + 1, v + 1, weight]);
+        //             totalLength += weight;
+        //             edgesAdded++; // Tăng số lượng cạnh đã thêm
+
+        //             // In bước thực hiện
+        //             const step = document.createElement('p');
+        //             step.innerText = `Thêm dây giữa phòng P${u + 1} và P${v + 1} với độ dài ${weight}. Tổng độ dài dây điện là: ${totalLength}`;
+        //             stepsDiv.appendChild(step);
+        //         }
+        //         // Không in ra thông điệp nếu MST đã đầy đủ
+        //         else if (edgesAdded < numRooms - 1) {
+        //             // In bước bỏ qua cạnh chỉ khi chưa đạt đủ số cạnh
+        //             const step = document.createElement('p');
+        //             step.innerText = `Bỏ qua dây giữa phòng P${u + 1} và P${v + 1} vì nó tạo thành chu trình.`;
+        //             stepsDiv.appendChild(step);
+        //         }
+        //     });
+
+        //     // In kết quả cuối cùng
+        //     const finalStep = document.createElement('p');
+        //     finalStep.innerText = `Cây khung nhỏ nhất có tổng độ dài dây điện là: ${totalLength}`;
+        //     stepsDiv.appendChild(finalStep);
+        // }
+        function primMST() {
+            const numRooms = parseInt(document.getElementById('numRooms').value);
+
+            // Lấy ma trận từ bảng HTML
+            const matrix = [];
+            for (let i = 1; i <= numRooms; i++) {
+                matrix[i - 1] = [];
+                for (let j = 1; j <= numRooms; j++) {
+                    const value = parseInt(document.querySelector(`#matrix tr:nth-child(${i + 1}) td:nth-child(${j + 1}) input`).value);
+                    matrix[i - 1][j - 1] = value;
+                }
+            }
+
+            const inMST = Array(numRooms).fill(false);
+            const key = Array(numRooms).fill(Infinity);
+            const parent = Array(numRooms).fill(-1);
+            key[0] = 0;
+            let totalLength = 0;
+
+            // Reset display
+            document.getElementById('steps').innerHTML = '';
+            document.querySelector('.steps').classList.remove('hidden');
+            const primEdgesTable = document.querySelector("#primEdges tbody");
+            primEdgesTable.innerHTML = ''; // Xóa bảng cũ
+            document.getElementById('primEdges').style.display = 'table';
+            document.getElementById('primEdgesTitle').style.display = 'block';
+            document.getElementById('sortedEdges').style.display = 'none';
+            document.getElementById('sortedEdgesTitle').style.display = 'none';
+
+            // Tìm đỉnh có key nhỏ nhất mà chưa nằm trong MST
+            function minKeyVertex(inMST, key, numRooms) {
+                let minKey = Infinity, u = -1;
+                for (let v = 0; v < numRooms; v++) {
+                    if (!inMST[v] && key[v] < minKey) {
+                        minKey = key[v];
+                        u = v;
+                    }
+                }
+                return u;
+            }
+
+            // Cập nhật key và parent
+            function updateKeyAndParent(u, matrix, key, parent, inMST, numRooms) {
+                for (let v = 0; v < numRooms; v++) {
+                    if (matrix[u][v] && !inMST[v] && matrix[u][v] < key[v]) {
+                        parent[v] = u;
+                        key[v] = matrix[u][v];
+                    }
+                }
+            }
+
+            // Hiển thị bước thực hiện và cập nhật bảng
+            function displayStepAndTable(parentU, u, weight, totalLength) {
+                const step = document.createElement('p');
+                step.innerText = `Thêm dây giữa phòng P${parentU + 1} và P${u + 1} với độ dài ${weight}. Tổng độ dài dây điện là: ${totalLength}`;
+                document.getElementById('steps').appendChild(step);
+
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>P${parentU + 1}</td><td>P${u + 1}</td><td>${weight}</td>`;
+                document.querySelector("#primEdges tbody").appendChild(row);
+            }
+
+            // Bắt đầu thuật toán Prim
+            for (let count = 0; count < numRooms; count++) {
+                const u = minKeyVertex(inMST, key, numRooms);
+                inMST[u] = true;
+
+                updateKeyAndParent(u, matrix, key, parent, inMST, numRooms);
+
+                if (parent[u] !== -1) {
+                    totalLength += matrix[u][parent[u]];
+                    displayStepAndTable(parent[u], u, matrix[u][parent[u]], totalLength);
+                }
+            }
+
+            // Hiển thị kết quả cuối cùng
+            const finalStep = document.createElement('p');
+            finalStep.innerText = `Cây khung nhỏ nhất có tổng độ dài dây điện là: ${totalLength}`;
+            document.getElementById('steps').appendChild(finalStep);
+        }
+</script>
+</body>
+
+</html>

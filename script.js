@@ -230,83 +230,111 @@ function kruskalMST() {
 //     finalStep.innerText = `Cây khung nhỏ nhất có tổng độ dài dây điện là: ${totalLength}`;
 //     stepsDiv.appendChild(finalStep);
 // }
-function primMST() {
-    const numRooms = parseInt(document.getElementById('numRooms').value);
+       function primMST() {
+            const numRooms = parseInt(document.getElementById('numRooms').value);
 
-    // Lấy ma trận từ bảng HTML
-    const matrix = [];
-    for (let i = 1; i <= numRooms; i++) {
-        matrix[i - 1] = [];
-        for (let j = 1; j <= numRooms; j++) {
-            const value = parseInt(document.querySelector(`#matrix tr:nth-child(${i + 1}) td:nth-child(${j + 1}) input`).value);
-            matrix[i - 1][j - 1] = value;
-        }
-    }
-
-    const inMST = Array(numRooms).fill(false);
-    const key = Array(numRooms).fill(Infinity);
-    const parent = Array(numRooms).fill(-1);
-    key[0] = 0;
-    let totalLength = 0;
-
-    // Reset display
-    document.getElementById('steps').innerHTML = '';
-    document.querySelector('.steps').classList.remove('hidden');
-    const primEdgesTable = document.querySelector("#primEdges tbody");
-    primEdgesTable.innerHTML = ''; // Xóa bảng cũ
-    document.getElementById('primEdges').style.display = 'table';
-    document.getElementById('primEdgesTitle').style.display = 'block';
-    document.getElementById('sortedEdges').style.display = 'none';
-    document.getElementById('sortedEdgesTitle').style.display = 'none';
-
-    // Tìm đỉnh có key nhỏ nhất mà chưa nằm trong MST
-    function minKeyVertex(inMST, key, numRooms) {
-        let minKey = Infinity, u = -1;
-        for (let v = 0; v < numRooms; v++) {
-            if (!inMST[v] && key[v] < minKey) {
-                minKey = key[v];
-                u = v;
+            // Lấy ma trận từ bảng HTML
+            const matrix = [];
+            for (let i = 1; i <= numRooms; i++) {
+                matrix[i - 1] = [];
+                for (let j = 1; j <= numRooms; j++) {
+                    const value = parseInt(document.querySelector(`#matrix tr:nth-child(${i + 1}) td:nth-child(${j + 1}) input`).value);
+                    matrix[i - 1][j - 1] = value;
+                }
             }
-        }
-        return u;
-    }
 
-    // Cập nhật key và parent
-    function updateKeyAndParent(u, matrix, key, parent, inMST, numRooms) {
-        for (let v = 0; v < numRooms; v++) {
-            if (matrix[u][v] && !inMST[v] && matrix[u][v] < key[v]) {
-                parent[v] = u;
-                key[v] = matrix[u][v];
+            const inMST = Array(numRooms).fill(false);
+            const key = Array(numRooms).fill(Infinity);
+            const parent = Array(numRooms).fill(-1);
+            key[0] = 0; // Bắt đầu từ đỉnh 0
+            let totalLength = 0;
+
+            // Reset display
+            document.getElementById('steps').innerHTML = '';
+            document.querySelector('.steps').classList.remove('hidden');
+            const primEdgesTable = document.querySelector("#primEdges tbody");
+            primEdgesTable.innerHTML = ''; // Xóa bảng cũ
+            document.getElementById('primEdges').style.display = 'table';
+            document.getElementById('primEdgesTitle').style.display = 'block';
+            document.getElementById('sortedEdges').style.display = 'none';
+            document.getElementById('sortedEdgesTitle').style.display = 'none';
+
+            // Tìm đỉnh có key nhỏ nhất mà chưa nằm trong MST
+            function minKeyVertex(inMST, key, numRooms) {
+                let minKey = Infinity, u = -1;
+                for (let v = 0; v < numRooms; v++) {
+                    if (!inMST[v] && key[v] < minKey) {
+                        minKey = key[v];
+                        u = v;
+                    }
+                }
+                return u;
             }
+
+            // Cập nhật key và parent
+            function updateKeyAndParent(u, matrix, key, parent, inMST, numRooms) {
+                for (let v = 0; v < numRooms; v++) {
+                    if (matrix[u][v] && !inMST[v] && matrix[u][v] < key[v]) {
+                        parent[v] = u;
+                        key[v] = matrix[u][v];
+                    }
+                }
+            }
+
+            // Bắt đầu thuật toán Prim
+            let openList = [];
+            const closeList = [];
+            let stepCount = 1;
+            for (let count = 0; count < numRooms; count++) {
+                const u = minKeyVertex(inMST, key, numRooms);
+                inMST[u] = true;
+                closeList.push(u + 1); // Thêm đỉnh hiện tại vào danh sách close
+
+                updateKeyAndParent(u, matrix, key, parent, inMST, numRooms);
+
+                // Giữ lại danh sách openList từ bước trước và chỉ loại bỏ đỉnh đã chọn
+                openList = openList.filter(edge => !edge.startsWith(`${parent[u] + 1}${u + 1}`));
+
+                // Tạo danh sách các cạnh có thể thêm vào từ đỉnh mới
+                for (let v = 0; v < numRooms; v++) {
+                    if (!inMST[v] && key[v] !== Infinity) {
+                        openList.push(`${u + 1}${v + 1}(${key[v]})`);
+                    }
+                }
+
+                // Danh sách P là cạnh thêm vào MST
+                const pList = [];
+                if (parent[u] !== -1) {
+                    pList.push(`${parent[u] + 1}${u + 1}(${matrix[u][parent[u]]})`);
+                    totalLength += matrix[u][parent[u]];  // Cộng trọng số vào tổng
+                }
+
+                // Hiển thị bước hiện tại
+                displayStepAndTable(stepCount, u + 1, pList, openList, closeList, totalLength);
+                stepCount++;
+            }
+            // Hiển thị từng bước thực hiện và cập nhật bảng
+            function displayStepAndTable(stepCount, vertex, pList, openList, closeList, totalLength) {
+                const stepText = document.createElement('p');
+
+                // Thêm vào các bước thực hiện dựa trên danh sách P
+                if (pList.length > 0) {
+                    // Lấy thông tin từ chuỗi vd:"15(1)" thành [1, 5, 1]
+                    const [u, v, length] = pList[0].match(/(\d)(\d)\((\d+)\)/).slice(1);
+
+                    stepText.innerText = `Thêm dây giữa phòng P${u} và P${v} với độ dài ${length}. Tổng độ dài dây điện là: ${totalLength}`;
+                }
+
+                document.getElementById('steps').appendChild(stepText);
+
+                // Hiển thị bảng
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${vertex}</td><td>${pList.join(', ')}</td><td>${openList.join(', ')}</td><td>${closeList.join(', ')}</td>`;
+                document.querySelector("#primEdges tbody").appendChild(row);
+            }
+
+            // Hiển thị tổng độ dài dây điện cuối cùng
+            const finalStep = document.createElement('p');
+            finalStep.innerText = `Cây khung nhỏ nhất có tổng độ dài dây điện là: ${totalLength}`;
+            document.getElementById('steps').appendChild(finalStep);
         }
-    }
-
-    // Hiển thị bước thực hiện và cập nhật bảng
-    function displayStepAndTable(parentU, u, weight, totalLength) {
-        const step = document.createElement('p');
-        step.innerText = `Thêm dây giữa phòng P${parentU + 1} và P${u + 1} với độ dài ${weight}. Tổng độ dài dây điện là: ${totalLength}`;
-        document.getElementById('steps').appendChild(step);
-
-        const row = document.createElement('tr');
-        row.innerHTML = `<td>P${parentU + 1}</td><td>P${u + 1}</td><td>${weight}</td>`;
-        document.querySelector("#primEdges tbody").appendChild(row);
-    }
-
-    // Bắt đầu thuật toán Prim
-    for (let count = 0; count < numRooms; count++) {
-        const u = minKeyVertex(inMST, key, numRooms);
-        inMST[u] = true;
-
-        updateKeyAndParent(u, matrix, key, parent, inMST, numRooms);
-
-        if (parent[u] !== -1) {
-            totalLength += matrix[u][parent[u]];
-            displayStepAndTable(parent[u], u, matrix[u][parent[u]], totalLength);
-        }
-    }
-
-    // Hiển thị kết quả cuối cùng
-    const finalStep = document.createElement('p');
-    finalStep.innerText = `Cây khung nhỏ nhất có tổng độ dài dây điện là: ${totalLength}`;
-    document.getElementById('steps').appendChild(finalStep);
-}

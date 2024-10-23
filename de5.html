@@ -95,6 +95,13 @@
             display: none;
         }
 
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 70vh;
+        }
+
         #sortedEdges,
         #sortedEdgesTitle {
             display: none;
@@ -106,6 +113,10 @@
         }
 
         #matrixTitle {
+            display: none;
+        }
+
+        #graphCanvas {
             display: none;
         }
 
@@ -216,6 +227,10 @@
         </thead>
         <tbody></tbody>
     </table>
+    
+    <div class="canvas-container">
+        <canvas id="graphCanvas" width="500" height="500" style="border:1px solid #000000;"></canvas>
+    </div>
 
     <div class="steps hidden">
         <h3>Các bước thực hiện:</h3>
@@ -267,8 +282,7 @@
                 table.appendChild(row);
             }
         }
-        // Hàm tìm cây khung nhỏ nhất bằng Kruskal
-        //cach 1
+        // Hàm tìm cây khung nhỏ nhất bằng Kruskal       
         function kruskalMST() {
             const numRooms = parseInt(document.getElementById('numRooms').value);
             const edges = [];
@@ -297,6 +311,7 @@
             sortedEdgesTable.innerHTML = ''; // Xóa bảng cũ
             document.getElementById('sortedEdges').style.display = 'table';
             document.getElementById('sortedEdgesTitle').style.display = 'block';
+            document.getElementById('graphCanvas').style.display = 'block';
             document.getElementById('primEdges').style.display = 'none';
             document.getElementById('primEdgesTitle').style.display = 'none';
 
@@ -322,48 +337,128 @@
 
             let edgesAdded = 0; // Biến đếm số cạnh đã thêm vào MST
 
-            edges.forEach(([weight, u, v]) => {
-                const visited = Array(numRooms).fill(false);
-                graph[u].push(v);
-                graph[v].push(u);
+            // Chuẩn bị vẽ đồ thị
+            const canvas = document.getElementById('graphCanvas');
+            const ctx = canvas.getContext('2d');
+            const radius = 20;
+            const roomCoordinates = [];
 
-                const cycleFormed = hasCycle(u, -1, visited); // Kiểm tra chu trình bằng DFS
+            // Vẽ các phòng (đỉnh)
+            function drawRooms() {
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const angleStep = (2 * Math.PI) / numRooms;
 
-                // Nếu có chu trình thì loại bỏ cạnh này khỏi đồ thị
-                if (cycleFormed) {
-                    graph[u].pop();
-                    graph[v].pop();
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Xóa canvas trước khi vẽ lại
+
+                for (let i = 0; i < numRooms; i++) {
+                    const x = centerX + 150 * Math.cos(i * angleStep);
+                    const y = centerY + 150 * Math.sin(i * angleStep);
+                    roomCoordinates.push({ x, y });
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
+                    ctx.fillStyle = '#FFD700'; // Màu vàng cho các đỉnh
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.font = '16px Arial';
+                    ctx.fillStyle = 'black';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`P${i + 1}`, x, y + 5);
+                }
+            }
+
+            // Vẽ cạnh (dây điện) và hiển thị trọng số
+            function drawEdge(u, v, weight, color = 'gray') {
+                const { x: x1, y: y1 } = roomCoordinates[u];
+                const { x: x2, y: y2 } = roomCoordinates[v];
+
+                // Vẽ cạnh
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Hiển thị trọng số ở giữa cạnh
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
+                ctx.fillStyle = 'black';
+                ctx.font = '14px Arial';
+                ctx.fillText(weight, midX, midY); // Hiển thị trọng số giữa cạnh
+            }
+
+            // Hàm delay 1 giây
+            function sleep(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            // Sử dụng async/await để thực hiện thuật toán Kruskal từng bước với khoảng dừng
+            async function kruskalSteps() {
+                drawRooms(); // Vẽ các phòng ban đầu
+
+                for (const [weight, u, v] of edges) {
+                    const visited = Array(numRooms).fill(false);
+                    graph[u].push(v);
+                    graph[v].push(u);
+
+                    const cycleFormed = hasCycle(u, -1, visited); // Kiểm tra chu trình bằng DFS
+
+                    // Nếu có chu trình thì loại bỏ cạnh này khỏi đồ thị
+                    if (cycleFormed) {
+                        graph[u].pop();
+                        graph[v].pop();
+                    }
+
+                    // Cập nhật bảng sortedEdges
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>P${u + 1}</td><td>P${v + 1}</td><td>${weight}</td><td>${cycleFormed ? 'Có' : 'Không'}</td>`;
+                    sortedEdgesTable.appendChild(row);
+
+                    if (!cycleFormed) {
+                        result.push([u + 1, v + 1, weight]);
+                        totalLength += weight;
+                        edgesAdded++; // Tăng số lượng cạnh đã thêm
+
+                        // In bước thực hiện
+                        const step = document.createElement('p');
+                        step.innerText = `Thêm dây giữa phòng P${u + 1} và P${v + 1} với độ dài ${weight}. Tổng độ dài dây điện là: ${totalLength}`;
+                        stepsDiv.appendChild(step);
+
+                        // Vẽ lại đồ thị minh họa với các cạnh đã thêm
+                        drawRooms(); // Vẽ lại các phòng
+                        result.forEach(([u, v, weight]) => {
+                            drawEdge(u - 1, v - 1, weight, 'green'); // Vẽ các cạnh đã thêm trước đó
+                        });
+
+                        // Vẽ cạnh mới được thêm với màu đỏ
+                        drawEdge(u, v, weight, 'red');
+
+                        // Chờ 1 giây trước khi tiếp tục
+                        await sleep(1000);
+                    } else if (edgesAdded < numRooms - 1) {
+                        // In bước bỏ qua cạnh chỉ khi chưa đạt đủ số cạnh
+                        const step = document.createElement('p');
+                        step.innerText = `Bỏ qua dây giữa phòng P${u + 1} và P${v + 1} vì nó tạo thành chu trình.`;
+                        stepsDiv.appendChild(step);
+                    }
+
+                    if (edgesAdded >= numRooms - 1) {
+                        break; // Nếu đã đủ số cạnh thì dừng lại
+                    }
                 }
 
-                // Cập nhật bảng sortedEdges
-                const row = document.createElement('tr');
-                row.innerHTML = `<td>P${u + 1}</td><td>P${v + 1}</td><td>${weight}</td><td>${cycleFormed ? 'Có' : 'Không'}</td>`;
-                sortedEdgesTable.appendChild(row);
+                // In kết quả cuối cùng
+                const finalStep = document.createElement('p');
+                finalStep.innerText = `Cây khung nhỏ nhất có tổng độ dài dây điện là: ${totalLength}`;
+                stepsDiv.appendChild(finalStep);
+            }
 
-                if (!cycleFormed) {
-                    result.push([u + 1, v + 1, weight]);
-                    totalLength += weight;
-                    edgesAdded++; // Tăng số lượng cạnh đã thêm
-
-                    // In bước thực hiện
-                    const step = document.createElement('p');
-                    step.innerText = `Thêm dây giữa phòng P${u + 1} và P${v + 1} với độ dài ${weight}. Tổng độ dài dây điện là: ${totalLength}`;
-                    stepsDiv.appendChild(step);
-                } else if (edgesAdded < numRooms - 1) {
-                    // In bước bỏ qua cạnh chỉ khi chưa đạt đủ số cạnh
-                    const step = document.createElement('p');
-                    step.innerText = `Bỏ qua dây giữa phòng P${u + 1} và P${v + 1} vì nó tạo thành chu trình.`;
-                    stepsDiv.appendChild(step);
-                }
-            });
-
-            // In kết quả cuối cùng
-            const finalStep = document.createElement('p');
-            finalStep.innerText = `Cây khung nhỏ nhất có tổng độ dài dây điện là: ${totalLength}`;
-            stepsDiv.appendChild(finalStep);
+            kruskalSteps(); // Gọi hàm thực hiện thuật toán Kruskal
         }
 
-        function primMST() {
+        async function primMST() {
             const numRooms = parseInt(document.getElementById('numRooms').value);
 
             // Lấy ma trận từ bảng HTML
@@ -389,8 +484,65 @@
             primEdgesTable.innerHTML = ''; // Xóa bảng cũ
             document.getElementById('primEdges').style.display = 'table';
             document.getElementById('primEdgesTitle').style.display = 'block';
+            document.getElementById('graphCanvas').style.display = 'block';
             document.getElementById('sortedEdges').style.display = 'none';
             document.getElementById('sortedEdgesTitle').style.display = 'none';
+
+            // Hàm vẽ đồ thị với các cạnh hiện có
+            function drawGraph(edges, mstEdges) {
+                const canvas = document.getElementById('graphCanvas');
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear canvas
+
+                const radius = 20; // Vertex radius
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const angleStep = (2 * Math.PI) / numRooms;
+
+                const positions = [];
+
+                // Draw vertices
+                for (let i = 0; i < numRooms; i++) {
+                    const angle = i * angleStep;
+                    const x = centerX + Math.cos(angle) * 200;
+                    const y = centerY + Math.sin(angle) * 200;
+                    positions.push({ x, y });
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, 2 * Math.PI);
+
+                    // Fill yellow, outline red (style matching)
+                    ctx.fillStyle = '#FFD700'; // Yellow fill
+                    ctx.fill();
+                    ctx.strokeStyle = 'red'; // Red outline
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+
+                    ctx.font = '16px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = 'black';
+                    ctx.fillText(`P${i + 1}`, x, y + 5); // Label for vertex
+                }
+
+                // Draw edges
+                edges.forEach(([u, v, length], index) => {
+                    const start = positions[u - 1];
+                    const end = positions[v - 1];
+
+                    ctx.beginPath();
+                    ctx.moveTo(start.x, start.y);
+                    ctx.lineTo(end.x, end.y);
+
+                    // Color the most recently added edge red, and others green
+                    ctx.strokeStyle = (index === edges.length - 1) ? 'red' : 'green'; // Red for last added, green otherwise
+                    ctx.lineWidth = (index === edges.length - 1) ? 3 : 2;
+                    ctx.stroke();
+
+                    // Add weight labels
+                    ctx.fillStyle = 'black';
+                    ctx.fillText(length, (start.x + end.x) / 2, (start.y + end.y) / 2);
+                });
+            }
 
             // Tìm đỉnh có key nhỏ nhất mà chưa nằm trong MST
             function minKeyVertex(inMST, key, numRooms) {
@@ -418,6 +570,8 @@
             let openList = [];
             const closeList = [];
             let stepCount = 1;
+            const mstEdges = [];
+
             for (let count = 0; count < numRooms; count++) {
                 const u = minKeyVertex(inMST, key, numRooms);
                 inMST[u] = true;
@@ -439,31 +593,42 @@
                 const pList = [];
                 if (parent[u] !== -1) {
                     pList.push(`${parent[u] + 1}${u + 1}(${matrix[u][parent[u]]})`);
+                    mstEdges.push([parent[u] + 1, u + 1, matrix[u][parent[u]]]);  // Lưu cạnh vào MST
                     totalLength += matrix[u][parent[u]];  // Cộng trọng số vào tổng
                 }
 
-                // Hiển thị bước hiện tại
-                displayStepAndTable(stepCount, u + 1, pList, openList, closeList, totalLength);
+                // Vẽ lại đồ thị với cạnh mới sau mỗi bước
+                await displayStepAndGraph(stepCount, u + 1, pList, openList, closeList, mstEdges, totalLength);
                 stepCount++;
             }
-            // Hiển thị từng bước thực hiện và cập nhật bảng
-            function displayStepAndTable(stepCount, vertex, pList, openList, closeList, totalLength) {
-                const stepText = document.createElement('p');
 
-                // Thêm vào các bước thực hiện dựa trên danh sách P
-                if (pList.length > 0) {
-                    // Lấy thông tin từ chuỗi vd:"15(1)" thành [1, 5, 1]
-                    const [u, v, length] = pList[0].match(/(\d)(\d)\((\d+)\)/).slice(1);
+            // Hiển thị từng bước thực hiện và cập nhật bảng, đồ thị
+            function displayStepAndGraph(stepCount, vertex, pList, openList, closeList, mstEdges, totalLength) {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        const stepText = document.createElement('p');
 
-                    stepText.innerText = `Thêm dây giữa phòng P${u} và P${v} với độ dài ${length}. Tổng độ dài dây điện là: ${totalLength}`;
-                }
+                        // Thêm vào các bước thực hiện dựa trên danh sách P
+                        if (pList.length > 0) {
+                            // Lấy thông tin từ chuỗi vd:"15(1)" thành [1, 5, 1]
+                            const [u, v, length] = pList[0].match(/(\d)(\d)\((\d+)\)/).slice(1);
 
-                document.getElementById('steps').appendChild(stepText);
+                            stepText.innerText = `Thêm dây giữa phòng P${u} và P${v} với độ dài ${length}. Tổng độ dài dây điện là: ${totalLength}`;
+                        }
 
-                // Hiển thị bảng
-                const row = document.createElement('tr');
-                row.innerHTML = `<td>${vertex}</td><td>${pList.join(', ')}</td><td>${openList.join(', ')}</td><td>${closeList.join(', ')}</td>`;
-                document.querySelector("#primEdges tbody").appendChild(row);
+                        document.getElementById('steps').appendChild(stepText);
+
+                        // Hiển thị bảng
+                        const row = document.createElement('tr');
+                        row.innerHTML = `<td>${vertex}</td><td>${pList.join(', ')}</td><td>${openList.join(', ')}</td><td>${closeList.join(', ')}</td>`;
+                        document.querySelector("#primEdges tbody").appendChild(row);
+
+                        // Vẽ đồ thị
+                        drawGraph(mstEdges);
+
+                        resolve();
+                    }, 1000); // Thời gian chờ 1 giây giữa mỗi bước
+                });
             }
 
             // Hiển thị tổng độ dài dây điện cuối cùng
@@ -471,6 +636,8 @@
             finalStep.innerText = `Cây khung nhỏ nhất có tổng độ dài dây điện là: ${totalLength}`;
             document.getElementById('steps').appendChild(finalStep);
         }
-        </script>
+
+    </script>
 </body>
+
 </html>

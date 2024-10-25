@@ -253,51 +253,61 @@
     <script>
         // Hàm tạo bảng ma trận dựa trên số phòng
         function generateMatrix() {
-            document.getElementById('matrixTitle').style.display = 'block';
-            const numRooms = parseInt(document.getElementById('numRooms').value);
-            const table = document.getElementById('matrix');
-            table.innerHTML = ''; // Xóa bảng cũ
+                document.getElementById('matrixTitle').style.display = 'block';
+                const numRooms = parseInt(document.getElementById('numRooms').value);
+                const table = document.getElementById('matrix');
+                table.innerHTML = ''; // Xóa bảng cũ
 
-            // Khởi tạo mảng values để lưu trữ giá trị
-            const values = Array.from({ length: numRooms + 1 }, () => Array(numRooms + 1).fill(0));
+                // Khởi tạo mảng values để lưu trữ giá trị
+                const values = Array.from({ length: numRooms + 1 }, () => Array(numRooms + 1).fill(0));
 
-            for (let i = 0; i <= numRooms; i++) {
-                const row = document.createElement('tr');
-                for (let j = 0; j <= numRooms; j++) {
-                    const cell = document.createElement(i == 0 || j == 0 ? 'th' : 'td');
-                    if (i == 0 && j == 0) {
-                        cell.innerText = 'Khoảng cách';
-                    } else if (i == 0 && j > 0) {
-                        cell.innerText = 'P' + j; // Đặt tiêu đề cột
-                    } else if (j == 0 && i > 0) {
-                        cell.innerText = 'P' + i; // Đặt tiêu đề hàng
-                    } else if (i > 0 && j > 0 && i < j) {
-                        const input = document.createElement('input');
-                        input.type = 'number';
-                        input.min = '0';
-                        const randomValue = Math.floor(Math.random() * 50);
-                        input.value = randomValue; // Gán giá trị ngẫu nhiên
-                        values[i][j] = randomValue; // Lưu giá trị vào mảng
-                        cell.appendChild(input);
-                    } else if (i > 0 && j > 0 && i > j) {
-                        const input = document.createElement('input');
-                        input.type = 'number';
-                        input.min = '0';
-                        input.value = values[j][i]; // Gán giá trị Aji từ mảng
-                        cell.appendChild(input);
-                    } else {
-                        const input = document.createElement('input');
-                        input.value = '0'; // Gán 0 cho ô (i, i)
-                        cell.appendChild(input);
+                for (let i = 0; i <= numRooms; i++) {
+                    const row = document.createElement('tr');
+                    for (let j = 0; j <= numRooms; j++) {
+                        const cell = document.createElement(i == 0 || j == 0 ? 'th' : 'td');
+                        if (i == 0 && j == 0) {
+                            cell.innerText = 'Khoảng cách';
+                        } else if (i == 0 && j > 0) {
+                            cell.innerText = 'P' + j; // Đặt tiêu đề cột
+                        } else if (j == 0 && i > 0) {
+                            cell.innerText = 'P' + i; // Đặt tiêu đề hàng
+                        } else if (i > 0 && j > 0 && i < j) {
+                            const input = document.createElement('input');
+                            input.type = 'number';
+                            input.min = '0';
+                            const randomValue = Math.floor(Math.random() * 50);
+                            input.value = randomValue; // Gán giá trị ngẫu nhiên
+                            values[i][j] = randomValue; // Lưu giá trị vào mảng
+                            input.onchange = () => {
+                                values[i][j] = parseInt(input.value) || 0; // Cập nhật giá trị khi thay đổi
+                                values[j][i] = values[i][j]; // Đồng bộ giá trị cho phần tử đối xứng
+                                drawGraph(values, numRooms); // Vẽ lại đồ thị
+                            };
+                            cell.appendChild(input);
+                        } else if (i > 0 && j > 0 && i > j) {
+                            const input = document.createElement('input');
+                            input.type = 'number';
+                            input.min = '0';
+                            input.value = values[j][i]; // Gán giá trị Aji từ mảng
+                            input.onchange = () => {
+                                values[i][j] = parseInt(input.value) || 0;
+                                values[j][i] = values[i][j];
+                                drawGraph(values, numRooms);
+                            };
+                            cell.appendChild(input);
+                        } else {
+                            const input = document.createElement('input');
+                            input.value = '0'; // Gán 0 cho ô (i, i)
+                            cell.appendChild(input);
+                        }
+                        row.appendChild(cell);
                     }
-                    row.appendChild(cell);
+                    table.appendChild(row);
                 }
-                table.appendChild(row);
-            }
 
-            // Gọi hàm vẽ đồ thị sau khi tạo ma trận
-            drawGraph(values, numRooms);
-        }
+                // Gọi hàm vẽ đồ thị sau khi tạo ma trận
+                drawGraph(values, numRooms);
+            }
 
         // Hàm vẽ đồ thị sử dụng D3.js
         function drawGraph(matrix, numRooms) {
